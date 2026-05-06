@@ -1,0 +1,428 @@
+@model BanglaVowelPuzzle.Controllers.GameViewModel
+@{
+    ViewData["Title"] = "বাংলা স্বরবর্ণ পাজল";
+    Layout = null;
+}
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>বাংলা স্বরবর্ণ পাজল</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+            font-family: 'Segoe UI', sans-serif;
+            color: #fff;
+        }
+
+        h1 {
+            font-size: 2rem;
+            margin-bottom: 6px;
+            letter-spacing: 2px;
+            color: #f0c040;
+            text-shadow: 0 2px 8px rgba(240,192,64,.4);
+        }
+
+        .subtitle {
+            font-size: 0.9rem;
+            color: #aac;
+            margin-bottom: 24px;
+        }
+
+        .board {
+            display: grid;
+            grid-template-columns: repeat(4, 90px);
+            grid-template-rows: repeat(3, 90px);
+            gap: 8px;
+            background: rgba(255,255,255,0.06);
+            padding: 14px;
+            border-radius: 16px;
+            box-shadow: 0 8px 32px rgba(0,0,0,.5);
+        }
+
+        .tile {
+            width: 90px;
+            height: 90px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 2.8rem;
+            font-weight: 700;
+            border-radius: 12px;
+            cursor: pointer;
+            user-select: none;
+            position: relative;
+            overflow: hidden;
+            transition: transform .12s ease, box-shadow .12s ease, background .2s;
+            background: linear-gradient(145deg, #e8a400, #c07800);
+            color: #fff;
+            box-shadow: 0 4px 12px rgba(0,0,0,.4), inset 0 1px 0 rgba(255,255,255,.2);
+        }
+
+        .tile:hover {
+            transform: scale(1.06);
+            box-shadow: 0 6px 18px rgba(0,0,0,.5), inset 0 1px 0 rgba(255,255,255,.25);
+        }
+
+        .tile.empty {
+            background: rgba(255,255,255,0.05);
+            box-shadow: inset 0 2px 8px rgba(0,0,0,.4);
+            cursor: default;
+            pointer-events: none;
+        }
+
+        .tile.movable {
+            background: linear-gradient(145deg, #2196f3, #1565c0);
+            animation: pulse 1.4s infinite;
+        }
+
+        @@keyframes pulse {
+            0%, 100% { box-shadow: 0 4px 12px rgba(33,150,243,.4), inset 0 1px 0 rgba(255,255,255,.2); }
+            50%       { box-shadow: 0 4px 22px rgba(33,150,243,.8), inset 0 1px 0 rgba(255,255,255,.3); }
+        }
+
+        .tile.solved-pos {
+            background: linear-gradient(145deg, #43a047, #2e7d32);
+        }
+
+        /* Ripple effect when tile speaks */
+        .tile.speaking::after {
+            content: '';
+            position: absolute;
+            inset: 0;
+            border-radius: 12px;
+            background: radial-gradient(circle, rgba(255,255,255,0.55) 0%, transparent 70%);
+            animation: ripple .55s ease-out forwards;
+        }
+
+        @@keyframes ripple {
+            0%   { opacity: 1; transform: scale(0.4); }
+            100% { opacity: 0; transform: scale(1.6); }
+        }
+
+        /* Sound wave icon inside speaking tile */
+        .tile .wave-icon {
+            display: none;
+            position: absolute;
+            bottom: 5px;
+            right: 7px;
+            font-size: 0.75rem;
+            opacity: 0.85;
+            animation: waveBob .4s ease-in-out infinite alternate;
+        }
+
+        .tile.speaking .wave-icon { display: block; }
+
+        @@keyframes waveBob {
+            from { transform: scaleY(1); }
+            to   { transform: scaleY(1.5); }
+        }
+
+        .controls {
+            display: flex;
+            gap: 12px;
+            margin-top: 20px;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+
+        button {
+            padding: 10px 22px;
+            border: none;
+            border-radius: 8px;
+            font-size: 1rem;
+            cursor: pointer;
+            font-weight: 600;
+            transition: transform .1s, box-shadow .1s;
+        }
+
+        #btnNew {
+            background: #e53935;
+            color: #fff;
+            box-shadow: 0 4px 12px rgba(229,57,53,.4);
+        }
+        #btnNew:hover { transform: translateY(-2px); box-shadow: 0 6px 18px rgba(229,57,53,.5); }
+
+        #btnHint {
+            background: #7b1fa2;
+            color: #fff;
+            box-shadow: 0 4px 12px rgba(123,31,162,.4);
+        }
+        #btnHint:hover { transform: translateY(-2px); box-shadow: 0 6px 18px rgba(123,31,162,.5); }
+
+        #btnMute {
+            background: #00796b;
+            color: #fff;
+            box-shadow: 0 4px 12px rgba(0,121,107,.4);
+            min-width: 52px;
+        }
+        #btnMute:hover { transform: translateY(-2px); box-shadow: 0 6px 18px rgba(0,121,107,.5); }
+        #btnMute.muted { background: #455a64; box-shadow: 0 4px 12px rgba(69,90,100,.4); }
+
+        .message {
+            margin-top: 18px;
+            font-size: 1.3rem;
+            font-weight: 700;
+            min-height: 34px;
+            color: #69ff69;
+            text-shadow: 0 0 12px rgba(100,255,100,.6);
+        }
+
+        .hint-panel {
+            margin-top: 16px;
+            background: rgba(255,255,255,0.08);
+            padding: 10px 18px;
+            border-radius: 10px;
+            font-size: 1.1rem;
+            color: #ddd;
+            display: none;
+        }
+        .hint-panel.show { display: block; }
+
+        .status-row {
+            display: flex;
+            gap: 20px;
+            align-items: center;
+            margin-top: 10px;
+            font-size: 0.9rem;
+            color: #99aacc;
+        }
+
+        #voiceStatus {
+            font-size: 0.75rem;
+            color: #667;
+            font-style: italic;
+        }
+
+        .keyboard-hint {
+            font-size: 0.75rem;
+            color: #556;
+            margin-top: 6px;
+        }
+    </style>
+</head>
+<body>
+    <h1>বাংলা স্বরবর্ণ পাজল</h1>
+    <p class="subtitle">Bangla Vowel Sliding Puzzle — 3×4</p>
+
+    <div class="board" id="board"></div>
+
+    <div class="status-row">
+        <span>Moves: <strong id="moveCount">0</strong></span>
+        <span id="voiceStatus">Loading voice…</span>
+    </div>
+
+    <div class="controls">
+        <button id="btnNew">New Game</button>
+        <button id="btnHint">Hint</button>
+        <button id="btnMute" title="Toggle sound">🔊</button>
+    </div>
+
+    <div class="message" id="message"></div>
+
+    <div class="hint-panel" id="hintPanel">
+        Goal order: <strong>অ আ ই ঈ উ ঊ ঋ এ ঐ ও ঔ ☐</strong>
+    </div>
+
+    <p class="keyboard-hint">Click a tile or use arrow keys &nbsp;|&nbsp; 🔊 = sound on/off</p>
+
+    <script>
+        const ROWS = 3, COLS = 4;
+        const solved = ["অ","আ","ই","ঈ","উ","ঊ","ঋ","এ","ঐ","ও","ঔ",""];
+
+        // Romanised fallback names spoken when no Bengali TTS voice is found
+        const romanNames = {
+            "অ":"o","আ":"aa","ই":"i","ঈ":"ee","উ":"u","ঊ":"oo",
+            "ঋ":"ri","এ":"e","ঐ":"oi","ও":"o","ঔ":"ou"
+        };
+
+        let board = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.Board));
+        let moves = 0;
+        let muted = false;
+        let banglaVoice = null;
+
+        // ── Speech synthesis setup ──────────────────────────────────────
+        function pickVoice() {
+            const voices = window.speechSynthesis.getVoices();
+            // Prefer bn-BD, then bn-IN, then any bn-* voice
+            banglaVoice = voices.find(v => v.lang === 'bn-BD')
+                       || voices.find(v => v.lang === 'bn-IN')
+                       || voices.find(v => v.lang.startsWith('bn'))
+                       || null;
+
+            const el = document.getElementById('voiceStatus');
+            if (banglaVoice) {
+                el.textContent = `🎙 ${banglaVoice.name} (${banglaVoice.lang})`;
+                el.style.color = '#66cc88';
+            } else {
+                el.textContent = 'No Bengali voice — using romanised fallback';
+                el.style.color = '#cc9944';
+            }
+        }
+
+        // Voices may load async (Chrome fires onvoiceschanged; Firefox is sync)
+        if (window.speechSynthesis) {
+            window.speechSynthesis.onvoiceschanged = pickVoice;
+            pickVoice();
+        } else {
+            document.getElementById('voiceStatus').textContent = 'Speech not supported in this browser';
+        }
+
+        function speakLetter(letter) {
+            if (muted || !letter || !window.speechSynthesis) return;
+            window.speechSynthesis.cancel();
+            const text = banglaVoice ? letter : (romanNames[letter] || letter);
+            const utter = new SpeechSynthesisUtterance(text);
+            if (banglaVoice) utter.voice = banglaVoice;
+            utter.lang = banglaVoice ? banglaVoice.lang : 'en-US';
+            utter.rate = 0.8;
+            utter.pitch = 1.1;
+            utter.volume = 1;
+            window.speechSynthesis.speak(utter);
+        }
+
+        // ── Render ──────────────────────────────────────────────────────
+        function render(speakIdx) {
+            const boardEl = document.getElementById('board');
+            boardEl.innerHTML = '';
+            const emptyIdx = board.indexOf('');
+
+            board.forEach((tile, idx) => {
+                const div = document.createElement('div');
+                div.className = 'tile' + (tile === '' ? ' empty' : '');
+                div.dataset.idx = idx;
+
+                if (tile !== '') {
+                    // wave-icon spans inside tile
+                    const wave = document.createElement('span');
+                    wave.className = 'wave-icon';
+                    wave.textContent = '🔊';
+
+                    const label = document.createElement('span');
+                    label.textContent = tile;
+
+                    div.appendChild(label);
+                    div.appendChild(wave);
+
+                    const r = Math.floor(idx / COLS), c = idx % COLS;
+                    const er = Math.floor(emptyIdx / COLS), ec = emptyIdx % COLS;
+                    const adjacent = (r === er && Math.abs(c - ec) === 1)
+                                  || (c === ec && Math.abs(r - er) === 1);
+                    if (adjacent) div.classList.add('movable');
+
+                    const solvedIdx = solved.indexOf(tile);
+                    if (idx === solvedIdx) div.classList.add('solved-pos');
+
+                    // Flash speaking effect on the tile that just moved
+                    if (speakIdx === idx) {
+                        div.classList.add('speaking');
+                        setTimeout(() => div.classList.remove('speaking'), 600);
+                    }
+
+                    div.addEventListener('click', () => tryMove(idx));
+                } else {
+                    div.textContent = '';
+                }
+
+                boardEl.appendChild(div);
+            });
+
+            document.getElementById('moveCount').textContent = moves;
+
+            const isSolved = board.every((t, i) => t === solved[i]);
+            document.getElementById('message').textContent =
+                isSolved ? '🎉 Solved! সঠিক! 🎉' : '';
+
+            if (isSolved) speakSolved();
+        }
+
+        function speakSolved() {
+            if (muted || !window.speechSynthesis) return;
+            window.speechSynthesis.cancel();
+            const utter = new SpeechSynthesisUtterance('Solved! সঠিক!');
+            utter.lang = 'en-US';
+            utter.rate = 0.9;
+            window.speechSynthesis.speak(utter);
+        }
+
+        // ── Move logic ──────────────────────────────────────────────────
+        function tryMove(tileIdx) {
+            const emptyIdx = board.indexOf('');
+            const r = Math.floor(tileIdx / COLS), c = tileIdx % COLS;
+            const er = Math.floor(emptyIdx / COLS), ec = emptyIdx % COLS;
+            const adjacent = (r === er && Math.abs(c - ec) === 1)
+                          || (c === ec && Math.abs(r - er) === 1);
+            if (!adjacent) return;
+
+            const letter = board[tileIdx];
+            speakLetter(letter);   // speak immediately on valid click
+
+            fetch('/Game/Move', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ tileIndex: tileIdx })
+            })
+            .then(r => r.json())
+            .then(data => {
+                // After move, the tile lands at the old emptyIdx position
+                const landedIdx = emptyIdx;
+                board = data.board;
+                moves++;
+                render(landedIdx);
+            });
+        }
+
+        // ── Buttons ─────────────────────────────────────────────────────
+        document.getElementById('btnNew').addEventListener('click', () => {
+            fetch('/Game/NewGame', { method: 'POST' })
+                .then(r => r.json())
+                .then(data => {
+                    board = data.board;
+                    moves = 0;
+                    document.getElementById('hintPanel').classList.remove('show');
+                    document.getElementById('message').textContent = '';
+                    render();
+                });
+        });
+
+        document.getElementById('btnHint').addEventListener('click', () => {
+            document.getElementById('hintPanel').classList.toggle('show');
+        });
+
+        document.getElementById('btnMute').addEventListener('click', () => {
+            muted = !muted;
+            const btn = document.getElementById('btnMute');
+            btn.textContent = muted ? '🔇' : '🔊';
+            btn.classList.toggle('muted', muted);
+            if (muted) window.speechSynthesis && window.speechSynthesis.cancel();
+        });
+
+        // ── Keyboard ────────────────────────────────────────────────────
+        document.addEventListener('keydown', e => {
+            const emptyIdx = board.indexOf('');
+            const er = Math.floor(emptyIdx / COLS), ec = emptyIdx % COLS;
+            let targetIdx = -1;
+
+            if (e.key === 'ArrowUp'    && er < ROWS - 1) targetIdx = (er + 1) * COLS + ec;
+            if (e.key === 'ArrowDown'  && er > 0)        targetIdx = (er - 1) * COLS + ec;
+            if (e.key === 'ArrowLeft'  && ec < COLS - 1) targetIdx = er * COLS + (ec + 1);
+            if (e.key === 'ArrowRight' && ec > 0)        targetIdx = er * COLS + (ec - 1);
+
+            if (targetIdx !== -1) {
+                e.preventDefault();
+                tryMove(targetIdx);
+            }
+        });
+
+        render();
+    </script>
+</body>
+</html>
