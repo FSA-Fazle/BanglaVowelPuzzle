@@ -2,6 +2,8 @@ var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddControllersWithViews();
 builder.Services.AddDistributedMemoryCache();
+builder.Services.AddMemoryCache();
+builder.Services.AddResponseCompression(o => o.EnableForHttps = true);
 builder.Services.AddSession(options =>
 {
     options.IdleTimeout = TimeSpan.FromHours(2);
@@ -12,12 +14,7 @@ builder.Services.AddSession(options =>
 var app = builder.Build();
 
 app.UsePathBase("/vowel");
-
-if (!app.Environment.IsDevelopment())
-{
-    app.UseExceptionHandler("/Home/Error");
-}
-
+app.UseResponseCompression();
 app.UseStaticFiles();
 app.UseRouting();
 app.UseSession();
