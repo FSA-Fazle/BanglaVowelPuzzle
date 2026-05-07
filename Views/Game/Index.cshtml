@@ -207,6 +207,25 @@
             color: #556;
             margin-top: 6px;
         }
+
+        .version-link {
+            margin-top: 14px;
+            font-size: 0.9rem;
+        }
+
+        .version-link a {
+            color: #4fc3f7;
+            text-decoration: none;
+            padding: 6px 14px;
+            border: 1px solid #4fc3f7;
+            border-radius: 20px;
+            transition: background .2s, color .2s;
+        }
+
+        .version-link a:hover {
+            background: #4fc3f7;
+            color: #000;
+        }
     </style>
 </head>
 <body>
@@ -233,6 +252,7 @@
     </div>
 
     <p class="keyboard-hint">Click a tile or use arrow keys &nbsp;|&nbsp; 🔊 = sound on/off</p>
+    <p class="version-link"><a href="https://banglaclass.ca/vowel_easy/">⬇ Easier Version</a></p>
 
     <script>
         const ROWS = 3, COLS = 4;
