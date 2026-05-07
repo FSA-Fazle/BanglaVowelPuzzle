@@ -11,24 +11,22 @@ builder.Services.AddSession(options =>
 
 var app = builder.Build();
 
-app.UsePathBase("/puzzle");
+app.UsePathBase("/vowel");
 
 if (!app.Environment.IsDevelopment())
 {
     app.UseExceptionHandler("/Home/Error");
-    app.UseHsts();
 }
 
-app.UseHttpsRedirection();
+app.UseStaticFiles();
 app.UseRouting();
 app.UseSession();
 app.UseAuthorization();
 
-app.MapStaticAssets();
+app.MapGet("/healthz", () => "ok");
 
 app.MapControllerRoute(
     name: "default",
-    pattern: "{controller=Game}/{action=Index}/{id?}")
-    .WithStaticAssets();
+    pattern: "{controller=Game}/{action=Index}/{id?}");
 
 app.Run();
