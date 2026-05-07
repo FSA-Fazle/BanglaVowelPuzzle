@@ -365,7 +365,7 @@
             const letter = board[tileIdx];
             speakLetter(letter);   // speak immediately on valid click
 
-            fetch('/Game/Move', {
+            fetch('@Url.Action("Move", "Game")', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ tileIndex: tileIdx })
@@ -382,7 +382,7 @@
 
         // ── Buttons ─────────────────────────────────────────────────────
         document.getElementById('btnNew').addEventListener('click', () => {
-            fetch('/Game/NewGame', { method: 'POST' })
+            fetch('@Url.Action("NewGame", "Game")', { method: 'POST' })
                 .then(r => r.json())
                 .then(data => {
                     board = data.board;
